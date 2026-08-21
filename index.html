@@ -11,7 +11,7 @@
     --bg:#0b1220; --panel:#131c2e; --panel2:#1b2740; --line:#26324d;
     --text:#eef2f9; --muted:#9fb0cc; --accent:#4f8cff;
     --liv:#e01a22; --wout:#f4c430; --whi:#0a2342; --whi-a:#3d7bd6;
-    --ok:#2ecc71;
+    --ok:#2ecc71; --warn:#f6d472; --bad:#ff9a9a;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -33,22 +33,32 @@
   h1{font-size:26px; margin:0 0 2px; letter-spacing:.2px}
   .sub{color:var(--muted); font-size:14px; margin:0 0 12px}
 
-  .tabs{display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px}
+  /* --- topic filters: real buttons, scrollable on wide phones, wrapped on small ones --- */
+  .tabs{
+    display:flex; gap:8px; padding-bottom:6px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+    scrollbar-color:var(--line) transparent;
+  }
+  .tabs::-webkit-scrollbar{height:6px}
+  .tabs::-webkit-scrollbar-thumb{background:var(--line); border-radius:999px}
+  .tabs::-webkit-scrollbar-track{background:transparent}
   .tab{
     flex:0 0 auto; cursor:pointer; border:1px solid var(--line);
     background:var(--panel); color:var(--text); padding:9px 14px;
     border-radius:999px; font-size:15px; font-weight:600; white-space:nowrap;
-    display:flex; align-items:center; gap:7px; transition:.15s;
+    display:inline-flex; align-items:center; gap:7px; font-family:inherit; line-height:1.2;
+    transition:background-color .15s, border-color .15s, box-shadow .15s;
   }
   .tab:hover{background:var(--panel2)}
-  .tab .dot{width:9px; height:9px; border-radius:50%}
-  .tab.active{border-color:var(--accent); background:var(--panel2)}
+  .tab:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+  .tab .dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto}
+  .tab[aria-pressed="true"]{border-color:var(--accent); background:var(--panel2); box-shadow:inset 0 0 0 1px var(--accent)}
   .tab .count{
     background:var(--bg); border:1px solid var(--line); border-radius:999px;
     padding:0 7px; font-size:12px; color:var(--muted); min-width:20px; text-align:center;
   }
   .tab .count:empty{display:none}
-  .tab.active .count{color:var(--text)}
+  .tab[aria-pressed="true"] .count{color:var(--text)}
   .dot-all{background:var(--accent)}
   .dot-liv{background:var(--liv)}
   .dot-wout{background:var(--wout)}
@@ -59,19 +69,36 @@
   .refresh{
     cursor:pointer; border:1px solid var(--line); background:var(--panel);
     color:var(--text); border-radius:10px; padding:8px 14px; font-size:14px; font-weight:600;
-    display:flex; align-items:center; gap:7px;
+    display:flex; align-items:center; gap:7px; font-family:inherit; flex:0 0 auto;
   }
   .refresh:hover{background:var(--panel2)}
+  .refresh:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
   .refresh:disabled{opacity:.5; cursor:default}
-  .spin{animation:spin 1s linear infinite}
+  .spin{display:inline-block; animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){ .spin{animation:none} }
+
+  /* --- per-topic state strip --- */
+  .states{display:flex; flex-wrap:wrap; gap:6px 10px; margin:0 0 12px; font-size:12.5px; color:var(--muted)}
+  .state{display:inline-flex; align-items:center; gap:6px; background:var(--panel);
+    border:1px solid var(--line); border-radius:999px; padding:3px 10px}
+  .state .dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto}
+  .state b{font-weight:600; color:var(--text)}
+  .state .st{font-weight:600}
+  .state .st-updating{color:var(--accent)}
+  .state .st-updated{color:var(--ok)}
+  .state .st-cached{color:var(--warn)}
+  .state .st-unavailable{color:var(--bad)}
+  .state .st-empty{color:var(--muted)}
 
   .card{
     display:block; text-decoration:none; color:inherit;
     background:var(--panel); border:1px solid var(--line); border-left-width:4px;
-    border-radius:14px; padding:15px 16px; margin:10px 0; transition:.15s;
+    border-radius:14px; padding:15px 16px; margin:10px 0;
+    transition:background-color .15s, transform .15s;
   }
   .card:hover{background:var(--panel2); transform:translateY(-1px)}
+  .card:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
   .card.liv{border-left-color:var(--liv)}
   .card.wout{border-left-color:var(--wout)}
   .card.whi{border-left-color:var(--whi-a)}
@@ -85,63 +112,340 @@
     display:inline-flex; align-items:center; gap:5px; font-weight:600; color:var(--text);
     background:var(--panel2); border:1px solid var(--line); padding:3px 9px; border-radius:999px;
   }
-  .verified{color:var(--ok); font-size:12px}
+  .verified{color:var(--ok); font-size:12px; font-weight:600}
   .topic-pill{padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600}
   .topic-pill.liv{background:rgba(224,26,34,.15); color:#ff8a8f}
   .topic-pill.wout{background:rgba(244,196,48,.15); color:#f6d472}
   .topic-pill.whi{background:rgba(61,123,214,.18); color:#9cc0ff}
 
   .status{text-align:center; color:var(--muted); padding:40px 16px; font-size:15px}
-  .status.err{color:#ff9a9a}
+  .status.err{color:var(--bad)}
   .status .big{font-size:34px; display:block; margin-bottom:8px}
   .retry{margin-top:14px; display:inline-block; cursor:pointer; border:1px solid var(--line);
-    background:var(--panel); color:var(--text); border-radius:10px; padding:9px 16px; font-weight:600}
+    background:var(--panel); color:var(--text); border-radius:10px; padding:9px 16px;
+    font-weight:600; font-family:inherit; font-size:14px}
+  .retry:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
 
   .foot{color:var(--muted); font-size:12px; text-align:center; margin-top:26px; line-height:1.7}
   a.inline{color:var(--accent)}
+
+  /* --- favourites modal --- */
+  .bar-actions{display:flex; gap:8px; flex:0 0 auto}
+  .modal{
+    width:min(460px, calc(100vw - 24px)); max-height:calc(100vh - 48px);
+    padding:0; border:1px solid var(--line); border-radius:16px;
+    background:var(--panel); color:var(--text); overflow:auto;
+    font-family:inherit; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  }
+  .modal::backdrop{background:rgba(4,8,16,.66)}
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 16px 10px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--panel);
+  }
+  .modal-head h2{margin:0; font-size:19px}
+  .icon-btn{
+    cursor:pointer; background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:10px; width:34px; height:34px; font-size:16px; font-family:inherit; line-height:1;
+  }
+  .icon-btn:hover{background:var(--line)}
+  .icon-btn:focus-visible, .fav-remove:focus-visible, .btn-primary:focus-visible,
+  .btn-done:focus-visible, .modal input:focus-visible, .modal select:focus-visible{
+    outline:3px solid var(--accent); outline-offset:2px
+  }
+  .modal-body{padding:14px 16px 18px; display:flex; flex-direction:column; gap:16px}
+  .fav-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+  .fav-row{
+    display:flex; align-items:center; gap:10px; background:var(--panel2);
+    border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+  }
+  .fav-row .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto}
+  .fav-name{font-weight:600; flex:1 1 auto; min-width:0}
+  .fav-name small{display:block; font-weight:500; color:var(--muted); font-size:12.5px}
+  .fav-remove{
+    cursor:pointer; background:transparent; color:var(--muted); border:1px solid var(--line);
+    border-radius:9px; padding:7px 11px; font-size:13px; font-weight:600; font-family:inherit; flex:0 0 auto;
+  }
+  .fav-remove:hover{color:#ff9a9a; border-color:#5a2a35}
+  .fav-empty{color:var(--muted); font-size:14px; margin:0}
+  .fav-add{display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding-top:14px}
+  .lbl{font-size:13px; font-weight:600; color:var(--muted)}
+  .modal input, .modal select{
+    width:100%; font-size:16px; font-family:inherit; color:var(--text);
+    background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:11px 12px;
+  }
+  .modal input::placeholder{color:#66748f}
+  .btn-primary{
+    cursor:pointer; background:var(--accent); color:#08101f; border:1px solid var(--accent);
+    border-radius:10px; padding:12px 14px; font-size:15px; font-weight:700; font-family:inherit;
+  }
+  .btn-primary:hover{filter:brightness(1.08)}
+  .btn-done{
+    cursor:pointer; background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:10px; padding:11px 14px; font-size:15px; font-weight:600; font-family:inherit;
+  }
+  .btn-done:hover{background:var(--line)}
+  .fav-err{margin:0; color:#ff9a9a; font-size:13.5px; min-height:0}
+  .fav-err:empty{display:none}
+
+  /* Phones: wrap the filters so every topic is reachable without sideways scrolling. */
+  @media (max-width:520px){
+    .tabs{flex-wrap:wrap; overflow-x:visible; padding-bottom:0}
+    .tab{flex:0 1 auto}
+    h1{font-size:23px}
+    .bar{margin-top:14px; flex-wrap:wrap}
+    .bar-actions{order:1; width:100%}
+    .bar-actions .refresh{flex:1 1 0; justify-content:center}
+    .updated{order:2; flex:1 0 100%}
+  }
 </style>
 </head>
 <body>
 <header>
   <div class="inner">
     <h1>Dad's Sports News</h1>
-    <p class="sub">Latest verified headlines · updates automatically</p>
-    <div class="tabs" id="tabs"></div>
+    <p class="sub">Latest headlines · updates automatically</p>
+    <div class="tabs" id="tabs" role="group" aria-label="Filter stories by topic"></div>
   </div>
 </header>
 
 <div class="wrap">
   <div class="bar">
-    <span class="updated" id="updated">Loading…</span>
-    <button class="refresh" id="refreshBtn" onclick="loadAll(true)">
-      <span id="refreshIcon">↻</span> Refresh
-    </button>
+    <span class="updated" id="updated" role="status" aria-live="polite" aria-atomic="true">Loading…</span>
+    <div class="bar-actions">
+      <button class="refresh" id="favBtn" type="button">
+        <span aria-hidden="true">★</span> Edit favourites
+      </button>
+      <button class="refresh" id="refreshBtn" type="button">
+        <span id="refreshIcon" aria-hidden="true">↻</span> Refresh
+      </button>
+    </div>
   </div>
+  <div class="states" id="states"></div>
   <div id="feed"></div>
+  <dialog class="modal" id="favDialog" aria-labelledby="favTitle">
+    <div class="modal-head">
+      <h2 id="favTitle">Favourites</h2>
+      <button type="button" class="icon-btn" id="favClose" aria-label="Close favourites">✕</button>
+    </div>
+    <div class="modal-body">
+      <ul class="fav-list" id="favList"></ul>
+      <form class="fav-add" id="favForm" novalidate>
+        <label class="lbl" for="favName">Team or athlete</label>
+        <input id="favName" type="text" maxlength="60" autocomplete="off"
+               placeholder="e.g. Toronto Raptors">
+        <label class="lbl" for="favSport">Sport</label>
+        <select id="favSport"></select>
+        <p class="fav-err" id="favErr" role="alert"></p>
+        <button type="submit" class="btn-primary">Add favourite</button>
+      </form>
+      <button type="button" class="btn-done" id="favDone">Done</button>
+    </div>
+  </dialog>
+
   <div class="foot">
     Headlines are pulled live from Google News and Bing News and shown with their original
-    publisher, so you can always see and trust the source. Tap any story to read the full article.<br>
+    publisher, so you can always see the source. Tap any story to read the full article.<br>
     Made for Dad ⚽🚴
   </div>
 </div>
 
 <script>
 /* ------------------------------------------------------------------ *
- *  EDIT HERE to change what news shows up.
- *  Each topic is searched on BOTH Google News and Bing News, then merged.
- *  Add/remove topics freely. "days" = how far back Google should look.
+ *  Favourites. These three are what Dad starts with; after that the
+ *  "Edit favourites" button writes his own list to localStorage and the
+ *  filter buttons follow it. Each one becomes the search
+ *  "<exact name>" <sport>, e.g. "Liverpool FC" football.
+ *  "days" = how far back Google should look.
  * ------------------------------------------------------------------ */
-const TOPICS = [
-  { id:"liv",  label:"Liverpool FC",        cls:"liv",  q:'"Liverpool FC"',        days:14 },
-  { id:"wout", label:"Wout van Aert",       cls:"wout", q:'"Wout van Aert"',       days:30 },
-  { id:"whi",  label:"Vancouver Whitecaps", cls:"whi",  q:'"Vancouver Whitecaps"', days:21 },
+const DEFAULT_FAVOURITES = [
+  { id:"liv",  name:"Liverpool FC",        sport:"football", cls:"liv",  days:14 },
+  { id:"wout", name:"Wout van Aert",       sport:"cycling",  cls:"wout", days:30 },
+  { id:"whi",  name:"Vancouver Whitecaps", sport:"football", cls:"whi",  days:21 },
 ];
 
-const MAX_PER_TOPIC = 12;
-let activeTab = "all";
-let cache = {};        // topicId -> array of items
+/* The sports offered in the modal. "value" is the word added to the search. */
+const SPORTS = [
+  {value:"football",          label:"Football (soccer)"},
+  {value:"cycling",           label:"Cycling"},
+  {value:"basketball",        label:"Basketball"},
+  {value:"ice hockey",        label:"Ice hockey"},
+  {value:"baseball",          label:"Baseball"},
+  {value:"American football", label:"American football"},
+  {value:"tennis",            label:"Tennis"},
+  {value:"golf",              label:"Golf"},
+  {value:"rugby",             label:"Rugby"},
+  {value:"cricket",           label:"Cricket"},
+  {value:"athletics",         label:"Athletics"},
+  {value:"motorsport",        label:"Motorsport"},
+];
 
-/* ---- feed URLs ---- */
+const TOPIC_COLOURS = ["liv","wout","whi"];   // the three card colours, reused in turn
+const DEFAULT_DAYS  = 21;                     // how far back a newly added favourite looks
+const MAX_FAVOURITES = 8;
+const FAV_KEY = "dads-sports-news:favourites:v1";
+
+let favourites = readFavourites();
+let TOPICS = buildTopics();
+
+/* ------------------------------------------------------------------ *
+ *  EDIT HERE to decide which publishers get the green "Trusted source"
+ *  badge. Everything else still shows its publisher name — it just does
+ *  not get the badge. Entries may be domains ("bbc.com") or the exact
+ *  name a feed reports ("BBC Sport"); both are matched case-insensitively.
+ * ------------------------------------------------------------------ */
+const TRUSTED_PUBLISHERS = [
+  // Wire services and general news
+  "bbc.com", "bbc.co.uk", "theguardian.com", "reuters.com", "apnews.com",
+  "nytimes.com", "washingtonpost.com", "cbc.ca", "sportsnet.ca", "tsn.ca",
+  // Football
+  "espn.com", "espn.co.uk", "skysports.com", "theathletic.com", "goal.com",
+  "liverpoolfc.com", "liverpoolecho.co.uk", "football.london", "premierleague.com",
+  "mlssoccer.com", "whitecapsfc.com", "vancouversun.com", "theprovince.com",
+  // Cycling
+  "cyclingnews.com", "cyclingweekly.com", "velo.outsideonline.com", "velonews.com",
+  "gcn.com", "wielerflits.nl", "sporza.be", "hln.be", "nos.nl", "uci.org",
+];
+
+const MAX_PER_TOPIC   = 12;
+const FETCH_TIMEOUT_MS = 9000;    // per network attempt
+const TOPIC_BUDGET_MS  = 25000;   // total time one topic may spend refreshing
+const AUTO_REFRESH_MS  = 15*60*1000;
+const CACHE_KEY        = "dads-sports-news:v2";
+const CACHE_MAX_AGE_MS = 7*24*60*60*1000;   // saved stories older than this are dropped
+
+/* Friendlier names for domains we recognise. Purely cosmetic. */
+const PUBLISHER_ALIASES = {
+  "bbc.com":"BBC Sport", "bbc.co.uk":"BBC Sport", "theguardian.com":"The Guardian",
+  "apnews.com":"AP News", "reuters.com":"Reuters", "espn.com":"ESPN",
+  "espn.co.uk":"ESPN", "skysports.com":"Sky Sports", "theathletic.com":"The Athletic",
+  "nytimes.com":"The New York Times", "cbc.ca":"CBC", "sportsnet.ca":"Sportsnet",
+  "tsn.ca":"TSN", "liverpoolfc.com":"Liverpool FC", "liverpoolecho.co.uk":"Liverpool Echo",
+  "football.london":"Football.London", "premierleague.com":"Premier League",
+  "mlssoccer.com":"MLSsoccer.com", "whitecapsfc.com":"Vancouver Whitecaps FC",
+  "vancouversun.com":"Vancouver Sun", "theprovince.com":"The Province",
+  "cyclingnews.com":"Cyclingnews", "cyclingweekly.com":"Cycling Weekly",
+  "velo.outsideonline.com":"Velo", "velonews.com":"VeloNews", "gcn.com":"GCN",
+  "wielerflits.nl":"WielerFlits", "sporza.be":"Sporza", "hln.be":"HLN",
+  "nos.nl":"NOS", "uci.org":"UCI", "goal.com":"GOAL",
+};
+
+/* Hosts that are aggregators, never the real publisher. */
+const AGGREGATOR_HOSTS = ["news.google.com","google.com","bing.com","news.bing.com","msn.com"];
+const AGGREGATOR_NAMES = ["google news","bing news","bing","google","news"];
+
+const STATE_TEXT = {
+  updating:"Updating", updated:"Updated", cached:"Using saved stories",
+  unavailable:"Unavailable", empty:"No recent stories", idle:"Waiting",
+};
+
+/* ---------- favourites: storage + topic list ---------- */
+function favSlug(name, sport){
+  return "t-" + (name + "-" + sport).toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+function sportLabel(value){
+  const s = SPORTS.find(x => x.value === value);
+  return s ? s.label : (value || "");
+}
+function readFavourites(){
+  try{
+    const list = JSON.parse(localStorage.getItem(FAV_KEY) || "null");
+    if(Array.isArray(list)){
+      const clean = list
+        .filter(f => f && typeof f.name === "string" && f.name.trim())
+        .slice(0, MAX_FAVOURITES)
+        .map(f => ({
+          id: f.id || favSlug(f.name, f.sport || ""),
+          name: String(f.name).trim(),
+          sport: typeof f.sport === "string" ? f.sport.trim() : "",
+          cls: TOPIC_COLOURS.indexOf(f.cls) > -1 ? f.cls : null,
+          days: Number(f.days) > 0 ? Number(f.days) : DEFAULT_DAYS,
+        }));
+      return clean;                                  // an empty saved list is a real choice
+    }
+  }catch(e){ /* unreadable storage: fall through to the defaults */ }
+  return DEFAULT_FAVOURITES.map(f => Object.assign({}, f));
+}
+function saveFavourites(){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(favourites)); }catch(e){}
+}
+function buildTopics(){
+  return favourites.map((f, i) => ({
+    id: f.id,
+    label: f.name,
+    name: f.name,
+    sport: f.sport,
+    cls: f.cls || TOPIC_COLOURS[i % TOPIC_COLOURS.length],
+    q: '"' + f.name + '"' + (f.sport ? " " + f.sport : ""),
+    days: f.days || DEFAULT_DAYS,
+  }));
+}
+// Spread the three card colours evenly instead of always starting at red.
+function nextColour(){
+  const used = {};
+  TOPIC_COLOURS.forEach(c => { used[c] = 0; });
+  favourites.forEach(f => { if(f.cls in used) used[f.cls]++; });
+  return TOPIC_COLOURS.reduce((best, c) => used[c] < used[best] ? c : best, TOPIC_COLOURS[0]);
+}
+function addFavourite(name, sport){
+  name = (name || "").trim().replace(/\s+/g, " ");
+  if(!name) return "Type a team or athlete name first.";
+  if(favourites.length >= MAX_FAVOURITES) return "That's the most favourites the page can follow.";
+  // Compare on name+sport, not on id: the three defaults carry short ids
+  // ("liv") that a freshly generated slug would never match.
+  const key = f => (f.name + "|" + f.sport).toLowerCase().replace(/\s+/g, " ").trim();
+  if(favourites.some(f => key(f) === key({name, sport})))
+    return name + " is already on the list.";
+  const id = favSlug(name, sport);
+  favourites.push({id, name, sport, cls: nextColour(), days: DEFAULT_DAYS});
+  applyFavourites();
+  return "";
+}
+function removeFavourite(id){
+  favourites = favourites.filter(f => f.id !== id);
+  applyFavourites();
+}
+// Rebuild everything that hangs off the favourites list, keeping the stories
+// already on screen for the favourites that survived the edit.
+function applyFavourites(){
+  saveFavourites();
+  TOPICS = buildTopics();
+  const live = new Set(TOPICS.map(t => t.id));
+  Object.keys(states).forEach(id => { if(!live.has(id)) delete states[id]; });
+  Object.keys(store).forEach(id => { if(!live.has(id)) delete store[id]; });
+  TOPICS.forEach(t => { if(!(t.id in states)) states[t.id] = "idle"; });
+  if(activeTab !== "all" && !live.has(activeTab)) activeTab = "all";
+  readCache();                                   // a re-added favourite gets its saved stories back
+  writeCache();                                  // and a removed one drops out of storage
+  buildTabs();
+  renderFavList();
+  render();
+}
+
+/* ---------- publisher normalising + trust ---------- */
+function normKey(s){
+  return String(s||"").toLowerCase().trim()
+    .replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/.*$/,"").trim();
+}
+const TRUSTED = new Set(TRUSTED_PUBLISHERS.map(normKey));
+function hostOf(link){
+  try{ return new URL(link).hostname.replace(/^www\./,"").toLowerCase(); }catch(e){ return ""; }
+}
+function isAggregatorHost(h){
+  return !!h && AGGREGATOR_HOSTS.some(a => h === a || h.endsWith("." + a));
+}
+function isAggregatorName(n){
+  const k = normKey(n);
+  return !k || AGGREGATOR_NAMES.includes(k) || isAggregatorHost(k);
+}
+function prettyPublisher(nameOrHost){
+  const k = normKey(nameOrHost);
+  if(PUBLISHER_ALIASES[k]) return PUBLISHER_ALIASES[k];
+  return String(nameOrHost||"").trim() || "News";
+}
+
+/* ---------- feed URLs ---------- */
 const googleUrl = t =>
   "https://news.google.com/rss/search?q=" +
   encodeURIComponent(t.q + " when:" + t.days + "d") + "&hl=en-US&gl=US&ceid=US:en";
@@ -160,63 +464,132 @@ const PROXIES = [
   u => "https://thingproxy.freeboard.io/fetch/" + u,
 ];
 
-// Returns array of raw items: {title, link, pubDate, description, source}
-async function viaProxy(url){
+/* Every network call is time-boxed so one hung proxy can't freeze a refresh. */
+async function fetchWithTimeout(url, ms){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms || FETCH_TIMEOUT_MS);
+  try{
+    return await fetch(url, {cache:"no-store", signal:ctrl.signal});
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+// Returns array of raw items: {title, link, pubDate, description, source, sourceUrl}
+async function viaProxy(url, deadline){
   let lastErr;
   for(const proxy of PROXIES){
+    if(Date.now() > deadline) break;
     try{
-      const res = await fetch(proxy(url), {cache:"no-store"});
+      const res = await fetchWithTimeout(proxy(url), Math.min(FETCH_TIMEOUT_MS, deadline - Date.now()));
       if(!res.ok) throw new Error("HTTP " + res.status);
       const txt = await res.text();
-      if(!txt || txt.indexOf("<item") === -1) throw new Error("empty");
+      if(!txt) throw new Error("empty body");
       const doc = new DOMParser().parseFromString(txt, "text/xml");
-      const items = [...doc.querySelectorAll("item")].map(it => ({
-        title: it.querySelector("title")?.textContent || "",
-        link: it.querySelector("link")?.textContent || "",
-        pubDate: it.querySelector("pubDate")?.textContent || "",
-        description: it.querySelector("description")?.textContent || "",
-        source: it.querySelector("source")?.textContent || "",
-      }));
-      if(items.length) return items;
-      throw new Error("no items");
+      if(doc.querySelector("parsererror")) throw new Error("not xml");
+      // A well-formed feed with zero <item>s is a real answer ("nothing to
+      // report"), not a failure, so it is returned rather than thrown.
+      if(!doc.querySelector("channel, feed, rss") && txt.indexOf("<item") === -1)
+        throw new Error("not a feed");
+      const items = [...doc.querySelectorAll("item")].map(it => {
+        const src = it.querySelector("source");
+        return {
+          title: it.querySelector("title")?.textContent || "",
+          link: it.querySelector("link")?.textContent || "",
+          pubDate: it.querySelector("pubDate")?.textContent || "",
+          description: it.querySelector("description")?.textContent || "",
+          source: src?.textContent || "",
+          sourceUrl: src?.getAttribute("url") || "",
+        };
+      });
+      return items;
     }catch(e){ lastErr = e; }
   }
   throw lastErr || new Error("all proxies failed");
 }
 
 // Backup path: RSS-to-JSON service (proper CORS). No <source>, but has description.
-async function viaRss2Json(url){
-  const api = "https://api.rss2json.com/v1/api.json?count=15&rss_url=" + encodeURIComponent(url);
-  const res = await fetch(api, {cache:"no-store"});
+async function viaRss2Json(url, deadline){
+  // No "count" parameter: rss2json now rejects it without a paid API key,
+  // which silently broke this backup path. The free tier returns 10 items.
+  const api = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(url);
+  const res = await fetchWithTimeout(api, Math.min(FETCH_TIMEOUT_MS, Math.max(1000, deadline - Date.now())));
   if(!res.ok) throw new Error("rss2json HTTP " + res.status);
   const data = await res.json();
   if(data.status !== "ok" || !Array.isArray(data.items) || !data.items.length)
     throw new Error("rss2json empty");
   return data.items.map(i => ({
     title:i.title||"", link:i.link||"", pubDate:i.pubDate||"",
-    description:i.description||"", source:i.author||"",
+    description:i.description||"", source:i.author||"", sourceUrl:"",
   }));
 }
 
-async function fetchRaw(url){
-  try{ return await viaProxy(url); }
-  catch(e){ return await viaRss2Json(url); }
+async function fetchRaw(url, deadline){
+  try{ return await viaProxy(url, deadline); }
+  catch(e){ return await viaRss2Json(url, deadline); }
 }
 
-/* ---- text helpers ---- */
+/* ---------- text helpers ---------- */
 function stripHtml(s){
   if(!s) return "";
   const d = new DOMParser().parseFromString(s, "text/html");
   return (d.body.textContent || "").replace(/\s+/g, " ").trim();
 }
-function prettySource(link){
+function b64(s){
   try{
-    let h = new URL(link).hostname.replace(/^www\./, "");
-    return h;
-  }catch(e){ return "News"; }
+    let v = s.replace(/-/g,"+").replace(/_/g,"/");
+    while(v.length % 4) v += "=";
+    return atob(v);
+  }catch(e){ return ""; }
+}
+/* Google and Bing wrap the real article URL. Dig it back out when they do. */
+function unwrapLink(link){
+  const raw = (link||"").trim();
+  try{
+    const u = new URL(raw);
+    if(!isAggregatorHost(u.hostname.replace(/^www\./,"").toLowerCase())) return raw;
+    for(const key of ["url","u","q"]){
+      let v = u.searchParams.get(key);
+      if(!v) continue;
+      if(!/^https?:\/\//i.test(v) && /^a1/i.test(v)) v = b64(v.slice(2));   // Bing's "a1<base64>"
+      if(/^https?:\/\//i.test(v)) return v;
+    }
+    return raw;
+  }catch(e){ return raw; }
+}
+/* Google News puts the publisher in a grey <font> tag inside description. */
+function publisherFromDescription(html){
+  if(!html) return "";
+  try{
+    const d = new DOMParser().parseFromString(html, "text/html");
+    const f = d.querySelector("font");
+    const name = (f?.textContent || "").trim();
+    return isAggregatorName(name) ? "" : name;
+  }catch(e){ return ""; }
 }
 
-/* ---- normalisers ---- */
+/* Build the publisher fields shared by every story. */
+function attachPublisher(story, opts){
+  const candidates = [];
+  if(opts.name && !isAggregatorName(opts.name)) candidates.push(opts.name);
+  const srcHost = hostOf(opts.sourceUrl);
+  if(srcHost && !isAggregatorHost(srcHost)) candidates.push(srcHost);
+  const linkHost = hostOf(story.link);
+  if(linkHost && !isAggregatorHost(linkHost)) candidates.push(linkHost);
+
+  const chosen = candidates[0] || "";
+  story.pub = chosen ? prettyPublisher(chosen) : "News";
+  story.pubDomain = srcHost && !isAggregatorHost(srcHost) ? srcHost
+                  : (linkHost && !isAggregatorHost(linkHost) ? linkHost : "");
+  story.pubKey = normKey(story.pub);
+  story.trusted = TRUSTED.has(story.pubKey) ||
+                  (!!story.pubDomain && TRUSTED.has(normKey(story.pubDomain))) ||
+                  (!!chosen && TRUSTED.has(normKey(chosen)));
+  story.viaAggregator = isAggregatorHost(linkHost);
+  return story;
+}
+
+/* ---------- normalisers ---------- */
 function fromGoogle(raw, t){
   let title = (raw.title || "").trim();
   let pub = (raw.source || "").trim();
@@ -225,36 +598,55 @@ function fromGoogle(raw, t){
     const m = title.match(/\s[-–]\s([^-–]+)$/);
     if(m){ pub = m[1].trim(); title = title.slice(0, m.index).trim(); }
   }
-  return {
-    title, link:(raw.link||"").trim(), pub: pub || "News",
+  if(isAggregatorName(pub)) pub = publisherFromDescription(raw.description);
+  const story = {
+    title, link: unwrapLink(raw.link),
     summary:"",                                   // Google News carries no snippet
     date:new Date(raw.pubDate || Date.now()),
     topic:t.id, cls:t.cls, topicLabel:t.label,
   };
+  return attachPublisher(story, {name:pub, sourceUrl:raw.sourceUrl});
 }
 function fromBing(raw, t){
   const title = (raw.title || "").trim();
   let summary = stripHtml(raw.description);
   if(summary && summary.toLowerCase() === title.toLowerCase()) summary = "";
   if(summary.length > 220) summary = summary.slice(0, 217).trim() + "…";
-  const link = (raw.link || "").trim();
-  return {
-    title, link, pub: prettySource(link), summary,
+  const story = {
+    title, link: unwrapLink(raw.link), summary,
     date:new Date(raw.pubDate || Date.now()),
     topic:t.id, cls:t.cls, topicLabel:t.label,
   };
+  return attachPublisher(story, {name:raw.source, sourceUrl:raw.sourceUrl});
 }
 
-/* ---- load one topic from both sources, then merge ---- */
+/* ---------- merge + de-duplicate ---------- */
+function linkKey(it){
+  try{
+    const u = new URL(it.link);
+    return u.hostname.replace(/^www\./,"").toLowerCase() + u.pathname.replace(/\/$/,"");
+  }catch(e){ return (it.link||"").trim(); }
+}
 function mergeItems(bingItems, googleItems){
-  const map = new Map();
+  const map = new Map(), links = new Map();
   const keyOf = it => it.title.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 55);
+  // When the same story arrives from both feeds, keep one card and take the best
+  // fields from each: Bing's summary, whichever publisher is actually named.
+  const enrich = (ex, it) => {
+    if(!ex.summary && it.summary) ex.summary = it.summary;
+    if((!ex.pub || ex.pub === "News") && it.pub && it.pub !== "News"){
+      ex.pub = it.pub; ex.pubKey = it.pubKey; ex.pubDomain = it.pubDomain; ex.trusted = it.trusted;
+    }
+    if(ex.viaAggregator && !it.viaAggregator){ ex.link = it.link; ex.viaAggregator = false; }
+    if(isNaN(ex.date) && !isNaN(it.date)) ex.date = it.date;
+  };
   const add = it => {
     if(!it.title || !it.link) return;
-    const k = keyOf(it);
-    const ex = map.get(k);
-    if(!ex){ map.set(k, it); return; }
-    if(!ex.summary && it.summary) map.set(k, it);   // keep the version that has a preview
+    const k = keyOf(it), lk = linkKey(it);
+    const byTitle = map.get(k), byLink = links.get(lk);
+    if(byTitle){ enrich(byTitle, it); return; }
+    if(byLink){ enrich(byLink, it); return; }          // same URL, differently worded headline
+    map.set(k, it); links.set(lk, it);
   };
   bingItems.forEach(add);    // Bing first so summary-bearing items win dedupe
   googleItems.forEach(add);
@@ -263,58 +655,159 @@ function mergeItems(bingItems, googleItems){
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Fetch both sources for one topic, one after the other (not at once) to stay
-// under the rate limits of the free fetch services.
+/* ---------- loading one topic ---------- *
+ * Topics run in parallel with each other; inside a topic the two feeds are
+ * still staggered so the free proxies aren't hit with everything at once.
+ * Returns [] when the feeds answered but had nothing; throws when nothing answered.
+ */
 async function loadTopic(t){
-  let goog = [], bing = [];
-  try{ goog = (await fetchRaw(googleUrl(t))).map(x => fromGoogle(x, t)); }catch(e){}
+  const deadline = Date.now() + TOPIC_BUDGET_MS;
+  let goog = [], bing = [], answered = false;
+
+  try{
+    goog = (await fetchRaw(googleUrl(t), deadline)).map(x => fromGoogle(x, t));
+    answered = true;
+  }catch(e){}
+
   await sleep(350);
-  try{ bing = (await fetchRaw(bingUrl(t))).map(x => fromBing(x, t)); }catch(e){}
+
+  try{
+    bing = (await fetchRaw(bingUrl(t), deadline)).map(x => fromBing(x, t));
+    answered = true;
+  }catch(e){}
+
   let merged = mergeItems(bing, goog);
-  if(!merged.length){                         // nothing inside the date window → widen the search
+
+  if(!merged.length && Date.now() < deadline){       // nothing inside the date window → widen the search
     try{
       await sleep(300);
-      const g2 = (await fetchRaw(googleUrlBroad(t))).map(x => fromGoogle(x, t));
+      const g2 = (await fetchRaw(googleUrlBroad(t), deadline)).map(x => fromGoogle(x, t));
+      answered = true;
       merged = mergeItems(bing, g2);
     }catch(e){}
   }
-  if(!merged.length) throw new Error("no results");
+
+  if(!answered) throw new Error("no source answered");
   return merged
+    .filter(it => !isNaN(it.date))
     .sort((a, c) => c.date - a.date)
     .slice(0, MAX_PER_TOPIC);
 }
 
-let loading = false;
-async function loadAll(){
-  if(loading) return;                       // avoid overlapping runs
-  loading = true;
+/* ---------- store + localStorage cache ---------- */
+const store = {};                       // topicId -> {items, fetchedAt}
+const states = {};                      // topicId -> one of STATE_TEXT's keys
+
+function itemsFor(id){ return (store[id] && store[id].items) || []; }
+function hasItems(id){ return itemsFor(id).length > 0; }
+
+function reviveItem(o, t){
+  if(!o || !o.title || !o.link) return null;
+  const date = new Date(o.date);
+  if(isNaN(date)) return null;
+  return Object.assign({}, o, {date, topic:t.id, cls:t.cls, topicLabel:t.label});
+}
+function readCache(){
+  let any = false;
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw) || {};
+    TOPICS.forEach(t => {
+      const e = data[t.id];
+      if(!e || !Array.isArray(e.items)) return;
+      if(e.fetchedAt && Date.now() - e.fetchedAt > CACHE_MAX_AGE_MS) return;
+      if(hasItems(t.id)) return;                 // already showing something newer
+      const items = e.items.map(o => reviveItem(o, t)).filter(Boolean);
+      if(!items.length) return;
+      store[t.id] = {items, fetchedAt: e.fetchedAt || 0};
+      states[t.id] = "cached";
+      any = true;
+    });
+  }catch(e){ /* private mode / disabled storage: just skip the cache */ }
+  return any;
+}
+function writeCache(){
+  try{
+    const out = {};
+    TOPICS.forEach(t => {
+      const e = store[t.id];
+      if(!e || !e.items.length) return;
+      out[t.id] = {
+        fetchedAt: e.fetchedAt,
+        items: e.items.map(i => Object.assign({}, i, {date:i.date.toISOString()})),
+      };
+    });
+    localStorage.setItem(CACHE_KEY, JSON.stringify(out));
+  }catch(e){ /* quota or storage disabled: caching is best-effort */ }
+}
+
+/* ---------- refreshing ---------- */
+let refreshing = false, refreshQueued = false;
+
+async function refreshTopic(t){
+  try{
+    const items = await loadTopic(t);
+    if(items.length){
+      store[t.id] = {items, fetchedAt: Date.now()};
+      states[t.id] = "updated";
+      writeCache();
+    }else{
+      // Feeds answered with nothing. Keep anything we already had.
+      states[t.id] = hasItems(t.id) ? "cached" : "empty";
+    }
+  }catch(e){
+    // Never wipe the screen on failure — fall back to whatever is on hand.
+    states[t.id] = hasItems(t.id) ? "cached" : "unavailable";
+  }
+  render();                              // paint this topic as soon as it lands
+}
+
+async function refreshAll(){
+  if(!TOPICS.length) return;
+  if(refreshing){ refreshQueued = true; return; }   // no overlap; run again after
+  refreshing = true;
+  setBusy(true);
+  // Mark every topic as updating up front so the first paint of a cold start
+  // shows "Loading…" rather than an empty section.
+  TOPICS.forEach(t => { states[t.id] = "updating"; });
+  announce(TOPICS.some(t => hasItems(t.id))
+    ? "Showing saved stories · checking for updates…" : "Updating stories…");
+  render();
+
+  await Promise.all(TOPICS.map(t => refreshTopic(t)));   // all three topics at once
+
+  refreshing = false;
+  setBusy(false);
+  announceResult();
+  render();
+
+  if(refreshQueued){ refreshQueued = false; refreshAll(); }
+}
+
+function setBusy(on){
   const btn = document.getElementById("refreshBtn");
   const icon = document.getElementById("refreshIcon");
-  btn.disabled = true; icon.classList.add("spin");
-  document.getElementById("updated").textContent = "Getting the latest…";
-  if(!Object.keys(cache).length) showStatus("⏳","Loading the latest headlines…");
-
-  // Load topics ONE AT A TIME with a gap, and show each as soon as it arrives.
-  let anyOk = false;
-  for(const t of TOPICS){
-    try{
-      const items = await loadTopic(t);
-      if(items.length){ cache[t.id] = items; anyOk = true; render(); }
-    }catch(e){ /* keep going; other topics may still work */ }
-    await sleep(500);
-  }
-
-  btn.disabled = false; icon.classList.remove("spin");
-  loading = false;
-
-  if(!anyOk && !Object.keys(cache).length){
-    showStatus("😕","Couldn't reach the news right now.",
-      "The connection may be busy — tap to try again.", true);
-    document.getElementById("updated").textContent = "Update failed";
-    return;
-  }
-  stampUpdated();
-  render();
+  btn.disabled = !!on;                   // enabled again the moment the run ends
+  btn.setAttribute("aria-busy", on ? "true" : "false");
+  icon.classList.toggle("spin", !!on);
+}
+function announce(msg){
+  document.getElementById("updated").textContent = msg;
+}
+function announceResult(){
+  if(!TOPICS.length) return announce("No favourites yet");
+  const by = st => TOPICS.filter(t => states[t.id] === st);
+  const fresh = by("updated"), saved = by("cached"), broken = by("unavailable"), none = by("empty");
+  const time = new Date().toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  if(fresh.length === TOPICS.length) return announce("Updated " + time);
+  if(saved.length === TOPICS.length) return announce("Couldn't reach the news · showing saved stories");
+  if(broken.length === TOPICS.length) return announce("Update failed · no saved stories yet");
+  const bits = [fresh.length ? "Updated " + time : "Update failed"];
+  if(saved.length) bits.push("saved stories: " + saved.map(t => t.label).join(", "));
+  if(broken.length) bits.push("unavailable: " + broken.map(t => t.label).join(", "));
+  if(none.length)  bits.push("no recent stories: " + none.map(t => t.label).join(", "));
+  announce(bits.join(" · "));
 }
 
 /* ---------- rendering ---------- */
@@ -326,73 +819,176 @@ function timeAgo(d){
   const dy = Math.floor(h/24); if(dy < 7) return dy+(dy===1?" day ago":" days ago");
   return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 }
+let activeTab = "all";
 function collect(){
   let list = [];
   TOPICS.forEach(t => {
-    if(activeTab === "all" || activeTab === t.id) list = list.concat(cache[t.id] || []);
+    if(activeTab === "all" || activeTab === t.id) list = list.concat(itemsFor(t.id));
   });
   return list.sort((a,b) => b.date - a.date);
 }
+function visibleTopics(){
+  return activeTab === "all" ? TOPICS : TOPICS.filter(t => t.id === activeTab);
+}
 function render(){
   refreshCounts();
+  renderStates();
   const list = collect();
   const feed = document.getElementById("feed");
-  if(!list.length){ showStatus("📭","No stories yet for this section."); return; }
+
+  if(!list.length){
+    const shown = visibleTopics();
+    if(!TOPICS.length){
+      showStatus("★","No favourites yet.",
+        "Tap Edit favourites to add a team or athlete to follow.");
+    }else if(shown.some(t => states[t.id] === "updating" || states[t.id] === "idle")){
+      showStatus("⏳","Loading the latest headlines…");
+    }else if(shown.length && shown.every(t => states[t.id] === "unavailable")){
+      showStatus("😕","Couldn't reach the news right now.",
+        "The connection may be busy — tap to try again.", true);
+    }else{
+      showStatus("📭","No recent stories for this section.");
+    }
+    return;
+  }
+
   const showTopic = activeTab === "all";
   feed.innerHTML = list.map(it => `
-    <a class="card ${it.cls}" href="${it.link}" target="_blank" rel="noopener">
+    <a class="card ${it.cls}" href="${esc(it.link)}" target="_blank" rel="noopener">
       <p class="headline">${esc(it.title)}</p>
       ${it.summary ? `<p class="summary">${esc(it.summary)}</p>` : ``}
       <div class="meta">
-        <span class="pub">✓ ${esc(it.pub)}</span>
-        <span class="verified">verified source</span>
-        <span>·</span><span>${timeAgo(it.date)}</span>
+        <span class="pub">${esc(it.pub || "News")}</span>
+        ${it.trusted ? `<span class="verified">✓ Trusted source</span>` : ``}
+        <span aria-hidden="true">·</span><span>${timeAgo(it.date)}</span>
         ${showTopic ? `<span class="topic-pill ${it.cls}">${esc(it.topicLabel)}</span>` : ``}
       </div>
     </a>`).join("");
 }
+function renderStates(){
+  document.getElementById("states").innerHTML = TOPICS.map(t => {
+    const st = states[t.id] || "idle";
+    const age = store[t.id] && store[t.id].fetchedAt
+      ? " · " + timeAgo(new Date(store[t.id].fetchedAt)) : "";
+    const extra = (st === "cached" || st === "updated") ? age : "";
+    return `<span class="state"><span class="dot dot-${t.cls}"></span>
+      <b>${esc(t.label)}</b>
+      <span class="st st-${st}">${esc(STATE_TEXT[st] || st)}</span>
+      <span>${esc(extra)}</span></span>`;
+  }).join("");
+}
 function showStatus(big,msg,sub,retry){
   document.getElementById("feed").innerHTML =
     `<div class="status ${retry?"err":""}">
-       <span class="big">${big}</span>${esc(msg)}
+       <span class="big" aria-hidden="true">${big}</span>${esc(msg)}
        ${sub?`<br><span style="font-size:13px">${esc(sub)}</span>`:""}
-       ${retry?`<br><span class="retry" onclick="loadAll()">Try again</span>`:""}
+       ${retry?`<br><button type="button" class="retry" id="retryBtn">Try again</button>`:""}
      </div>`;
-}
-function stampUpdated(){
-  const now = new Date();
-  document.getElementById("updated").textContent =
-    "Updated " + now.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+  const r = document.getElementById("retryBtn");
+  if(r) r.addEventListener("click", refreshAll);
 }
 function esc(s){ return (s||"").replace(/[&<>"']/g, c =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ---------- tabs ---------- */
+/* ---------- topic filter buttons ---------- */
 function buildTabs(){
   const defs = [{id:"all",label:"All",dot:"dot-all"},
-    ...TOPICS.map(t => ({id:t.id,label:t.label,dot:"dot-"+t.id}))];
-  document.getElementById("tabs").innerHTML = defs.map(d =>
-    `<div class="tab ${d.id==="all"?"active":""}" data-id="${d.id}" onclick="setTab('${d.id}')">
-       <span class="dot ${d.dot}"></span>${d.label}<span class="count" id="count-${d.id}"></span></div>`).join("");
+    ...TOPICS.map(t => ({id:t.id,label:t.label,dot:"dot-"+t.cls}))];
+  const tabs = document.getElementById("tabs");
+  // Real <button> elements: Enter and Space activate them for free, and
+  // aria-pressed tells a screen reader which filter is selected.
+  tabs.innerHTML = defs.map(d =>
+    `<button type="button" class="tab" data-id="${d.id}"
+       aria-pressed="${d.id === "all" ? "true" : "false"}">
+       <span class="dot ${d.dot}" aria-hidden="true"></span>${esc(d.label)}<span class="count" id="count-${d.id}"></span>
+     </button>`).join("");
 }
 function refreshCounts(){
-  const total = TOPICS.reduce((n,t) => n + (cache[t.id]?.length || 0), 0);
+  const total = TOPICS.reduce((n,t) => n + itemsFor(t.id).length, 0);
   const set = (id,n) => { const el = document.getElementById("count-"+id); if(el) el.textContent = n ? n : ""; };
   set("all", total);
-  TOPICS.forEach(t => set(t.id, cache[t.id]?.length || 0));
+  TOPICS.forEach(t => set(t.id, itemsFor(t.id).length));
 }
 function setTab(id){
   activeTab = id;
-  document.querySelectorAll(".tab").forEach(t =>
-    t.classList.toggle("active", t.dataset.id === id));
+  document.querySelectorAll(".tab").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.id === id ? "true" : "false"));
   render();
 }
 
+/* ---------- favourites modal ---------- */
+const favDialog = document.getElementById("favDialog");
+
+function renderFavList(){
+  const ul = document.getElementById("favList");
+  if(!ul) return;
+  if(!favourites.length){
+    ul.innerHTML = `<li><p class="fav-empty">No favourites yet. Add one below.</p></li>`;
+    return;
+  }
+  ul.innerHTML = favourites.map((f, i) => {
+    const cls = f.cls || TOPIC_COLOURS[i % TOPIC_COLOURS.length];
+    return `<li class="fav-row">
+      <span class="dot dot-${cls}" aria-hidden="true"></span>
+      <span class="fav-name">${esc(f.name)}<small>${esc(sportLabel(f.sport) || "Any sport")}</small></span>
+      <button type="button" class="fav-remove" data-remove="${esc(f.id)}"
+        aria-label="Remove ${esc(f.name)}">Remove</button>
+    </li>`;
+  }).join("");
+}
+function favError(msg){
+  document.getElementById("favErr").textContent = msg || "";
+}
+function openFavourites(){
+  favError("");
+  document.getElementById("favName").value = "";
+  renderFavList();
+  // showModal() covers every current browser; the attribute fallback keeps the
+  // list usable on an older phone instead of throwing.
+  if(favDialog.showModal) favDialog.showModal(); else favDialog.setAttribute("open", "");
+}
+function closeFavourites(){
+  if(favDialog.close) favDialog.close(); else favDialog.removeAttribute("open");
+  // Catches a favourite added while an earlier refresh was still running.
+  if(TOPICS.some(t => states[t.id] === "idle")) refreshAll();
+}
+document.getElementById("favForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const nameEl = document.getElementById("favName");
+  const err = addFavourite(nameEl.value, document.getElementById("favSport").value);
+  favError(err);
+  if(err) return;
+  nameEl.value = "";
+  nameEl.focus();
+  refreshAll();                          // fetch the new favourite straight away
+});
+document.getElementById("favList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-remove]");
+  if(!btn) return;
+  removeFavourite(btn.dataset.remove);   // removals need no network call
+  favError("");
+});
+
 /* ---------- boot ---------- */
+document.getElementById("favSport").innerHTML =
+  SPORTS.map(sp => `<option value="${esc(sp.value)}">${esc(sp.label)}</option>`).join("");
+document.getElementById("tabs").addEventListener("click", e => {
+  const btn = e.target.closest(".tab");
+  if(btn) setTab(btn.dataset.id);
+});
+document.getElementById("refreshBtn").addEventListener("click", refreshAll);
+document.getElementById("favBtn").addEventListener("click", openFavourites);
+document.getElementById("favClose").addEventListener("click", closeFavourites);
+document.getElementById("favDone").addEventListener("click", closeFavourites);
+
+TOPICS.forEach(t => { states[t.id] = "idle"; });
 buildTabs();
-loadAll();
-setInterval(loadAll, 15*60*1000);                          // auto-refresh every 15 min
-document.addEventListener("visibilitychange", () => { if(!document.hidden) loadAll(); });
+renderFavList();
+readCache();                             // paint saved stories before touching the network
+render();
+refreshAll();
+setInterval(refreshAll, AUTO_REFRESH_MS);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshAll(); });
 </script>
 </body>
 </html>
